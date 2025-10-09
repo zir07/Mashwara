@@ -34,6 +34,10 @@ yarn-error.log
 testem.log
 /typings
 
+# Environment files
+.env
+.env.local
+
 # System Files
 .DS_Store
 Thumbs.db
@@ -117,3 +121,19 @@ yarn-error.log
 
 vite.config.*.timestamp*
 vitest.config.*.timestamp*
+
+# Expo
+node_modules/
+.expo/
+.yarn/
+dist/
+npm-debug.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+web-build/
+cache/
+

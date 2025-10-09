@@ -2,11 +2,23 @@
   "name": "@mashwara/mobile",
   "version": "0.0.1",
   "private": true,
+  "scripts": {
+    "eas-build-post-install": "cd ../ && node tools/scripts/eas-build-post-install.mjs . mobile"
+  },
   "dependencies": {
-    "@react-native/metro-config": "*",
-    "react": "*",
-    "react-native": "*",
-    "react-native-svg": "*",
-    "metro-config": "*"
+    "@expo/metro-config": "*",
+    "@testing-library/react-native": "*",
+    "expo": "^54.0.0",
+    "expo-splash-screen": "~31.0.10",
+    "expo-status-bar": "~3.0.8",
+    "expo-system-ui": "~6.0.7",
+    "jest-expo": "~54.0.12",
+    "metro-config": "*",
+    "metro-resolver": "*",
+    "react": "19.1.0",
+    "react-native": "0.81.4",
+    "react-native-svg": "15.12.1",
+    "react-native-svg-transformer": "*",
+    "react-native-web": "^0.21.0"
   }
 }

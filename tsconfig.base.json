@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
     "composite": true,
     "declarationMap": true,
     "emitDeclarationOnly": true,
@@ -16,6 +17,11 @@
     "skipLibCheck": true,
     "strict": true,
     "target": "es2022",
-    "customConditions": ["@mashwara/source"]
+    "customConditions": ["@mashwara/source"],
+    "paths": {
+      "@mashwara/types": ["libs/types/src/index.ts"],
+      "@mashwara/ui": ["libs/ui/src/index.ts"],
+      "@mashwara/validation": ["libs/validation/src/index.ts"]
+    }
   }
 }
