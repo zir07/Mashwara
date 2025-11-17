@@ -1,0 +1,191 @@
+// Mashwara Database Schema
+// Teacher Rating Application for Karachi Educational Institutions
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+enum InstitutionType {
+  UNIVERSITY
+  COLLEGE
+  SCHOOL
+}
+
+enum UserRole {
+  STUDENT
+  ADMIN
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum FlagReason {
+  INAPPROPRIATE
+  SPAM
+  FAKE
+  OTHER
+}
+
+enum FlagStatus {
+  PENDING
+  RESOLVED
+  DISMISSED
+}
+
+// ============================================================================
+// MODELS
+// ============================================================================
+
+model Institution {
+  id           String          @id @default(uuid())
+  name         String          @unique
+  abbreviation String?         @unique
+  type         InstitutionType
+  location     String // Area in Karachi
+  website      String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  // Relations
+  departments Department[]
+  teachers    Teacher[]
+  users       User[]
+
+  @@map("institutions")
+}
+
+model Department {
+  id            String      @id @default(uuid())
+  name          String
+  institutionId String
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  // Relations
+  institution Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  teachers    Teacher[]
+
+  @@unique([institutionId, name]) // Same department name per institution
+  @@index([institutionId])
+  @@map("departments")
+}
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  password      String // Hashed
+  firstName     String
+  lastName      String
+  role          UserRole @default(STUDENT)
+  institutionId String?
+  isVerified    Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  institution       Institution?  @relation(fields: [institutionId], references: [id], onDelete: SetNull)
+  reviews           Review[]      @relation("ReviewAuthor")
+  moderatedReviews  Review[]      @relation("ReviewModerator")
+  reportedFlags     ReviewFlag[]  @relation("FlagReporter")
+  resolvedFlags     ReviewFlag[]  @relation("FlagResolver")
+
+  @@index([email])
+  @@index([institutionId])
+  @@map("users")
+}
+
+model Teacher {
+  id            String   @id @default(uuid())
+  firstName     String
+  lastName      String
+  title         String? // e.g., "Dr.", "Professor"
+  institutionId String
+  departmentId  String
+  isActive      Boolean  @default(true)
+
+  // Aggregated ratings (computed from approved reviews)
+  averageRating Decimal? @db.Decimal(3, 2) // 0.00 to 5.00
+  totalReviews  Int      @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  institution Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  department  Department  @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  reviews     Review[]
+
+  @@unique([institutionId, firstName, lastName]) // Prevent duplicates
+  @@index([institutionId])
+  @@index([departmentId])
+  @@map("teachers")
+}
+
+model Review {
+  id        String       @id @default(uuid())
+  userId    String // Student who wrote review
+  teacherId String
+  rating    Int // 1-5
+  comment   String       @db.Text
+
+  // Course information
+  courseCode String?
+  courseName String?
+  semester   String? // e.g., "Fall 2024"
+
+  // Moderation workflow
+  status           ReviewStatus @default(PENDING)
+  moderatedBy      String? // Admin who moderated
+  moderatedAt      DateTime?
+  moderationNotes  String?      @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user      User         @relation("ReviewAuthor", fields: [userId], references: [id], onDelete: Cascade)
+  teacher   Teacher      @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  moderator User?        @relation("ReviewModerator", fields: [moderatedBy], references: [id], onDelete: SetNull)
+  flags     ReviewFlag[]
+
+  @@unique([userId, teacherId]) // One review per student per teacher
+  @@index([status])
+  @@index([teacherId, status])
+  @@index([userId])
+  @@map("reviews")
+}
+
+model ReviewFlag {
+  id          String     @id @default(uuid())
+  reviewId    String
+  reportedBy  String
+  reason      FlagReason
+  description String?    @db.Text
+  status      FlagStatus @default(PENDING)
+  resolvedBy  String?
+  resolvedAt  DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  // Relations
+  review   Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  reporter User   @relation("FlagReporter", fields: [reportedBy], references: [id], onDelete: Cascade)
+  resolver User?  @relation("FlagResolver", fields: [resolvedBy], references: [id], onDelete: SetNull)
+
+  @@index([reviewId])
+  @@index([status])
+  @@map("review_flags")
+}
